@@ -17,11 +17,10 @@ from docutils.parsers.rst import directives
 from sphinx import addnodes
 from sphinx.roles import XRefRole
 from sphinx.locale import l_, _
-from sphinx.domains import Domain, ObjType, Index
+from sphinx.domains import Domain, ObjType
 from sphinx.directives import ObjectDescription
 from sphinx.util.nodes import make_refnode
-from sphinx.util.compat import Directive
-from sphinx.util.docfields import Field, GroupedField, TypedField
+from sphinx.util.docfields import Field, TypedField
 
 plsql_sig_re = re.compile(
     r'''^ ([\w.]*\.)?              # package name(s)
@@ -31,13 +30,15 @@ plsql_sig_re = re.compile(
           )? $                     # and nothing more
           ''', re.VERBOSE | re.IGNORECASE)
 
+
 class PlSqlTypedField(TypedField):
     """
     A doc field to handle PL/SQL parameter passing modes.
 
     Two uses are possible: either parameter and type description are given
     separately, using a field from *names* and one from *typenames*,
-    respectively, or both are given using a field from *names*, see the example.
+    respectively, or both are given using a field from *names*, see the
+    example.
 
     Example::
 
@@ -52,7 +53,8 @@ class PlSqlTypedField(TypedField):
     def make_field(self, types, domain, items):
         def handle_item(fieldarg, content):
             par = nodes.paragraph()
-            par += self.make_xref(self.rolename, domain, fieldarg, nodes.strong)
+            par += self.make_xref(
+                self.rolename, domain, fieldarg, nodes.strong)
             if fieldarg in types:
                 par += nodes.Text(' (')
                 # NOTE: using .pop() here to prevent a single type node to be
@@ -90,6 +92,7 @@ class PlSqlTypedField(TypedField):
         fieldbody = nodes.field_body('', bodynode)
         return nodes.field('', fieldname, fieldbody)
 
+
 class PlSqlObject(ObjectDescription):
     """
     Description of a general PL/SQL object.
@@ -113,15 +116,15 @@ class PlSqlObject(ObjectDescription):
         m = plsql_sig_re.match(sig)
         if m is None:
             raise ValueError
-            
+
         name_prefix, name, arglist, retann = m.groups()
-    
+
         if not name_prefix:
             name_prefix = ''
 
         if self.env.temp_data.get('plsql:in_package'):
             name_prefix = self.env.temp_data['plsql:current_package'] + '.'
-        
+
         sig_prefix = self.get_signature_prefix(sig)
         if sig_prefix:
             signode += addnodes.desc_annotation(sig_prefix, sig_prefix)
@@ -136,26 +139,26 @@ class PlSqlObject(ObjectDescription):
         fullname += name
 
         signode += addnodes.desc_name(name, name)
-        
+
         if arglist:
             signode += addnodes.desc_parameterlist()
             stack = [signode[-1]]
-            
+
             for token in arglist.split(','):
                 if not token or token == ',' or token.isspace():
                     pass
                 else:
                     token = token.strip()
                     stack[-1] += addnodes.desc_parameter(token, token)
-            
+
         if retann:
             signode += addnodes.desc_returns(retann, retann)
-            
+
         return fullname
 
     def get_index_text(self, name):
         return _('%s (PL/SQL %s)') % (name, self.objtype)
-            
+
     def add_target_and_index(self, name, sig, signode):
         if name not in self.state.document.ids:
             signode['names'].append(name)
@@ -174,6 +177,7 @@ class PlSqlObject(ObjectDescription):
         if indextext:
             self.indexnode['entries'].append(('single', indextext, name, ''))
 
+
 class PlSqlPackage(PlSqlObject):
     """
     Description of a package object.
@@ -186,17 +190,19 @@ class PlSqlPackage(PlSqlObject):
         self.env.temp_data['plsql:in_package'] = True
         if self.names:
             self.env.temp_data['plsql:current_package'] = self.names[0]
-    
+
     def after_content(self):
         self.env.temp_data['plsql:in_package'] = False
+
 
 class PlSqlMethod(PlSqlObject):
     """
     Description of a package member.
     """
-    
+
     def get_signature_prefix(self, sig):
         return self.objtype + ' '
+
 
 class PlSqlLibrary(PlSqlObject):
     """
@@ -206,6 +212,7 @@ class PlSqlLibrary(PlSqlObject):
     def get_signature_prefix(self, sig):
         return self.objtype + ' '
 
+
 class PlSqlType(PlSqlObject):
     """
     Description of a type.
@@ -214,6 +221,16 @@ class PlSqlType(PlSqlObject):
     def get_signature_prefix(self, sig):
         return self.objtype + ' '
 
+
+class PlSqlTable(PlSqlObject):
+    """
+    Description of a table.
+    """
+
+    def get_signature_prefix(self, sig):
+        return self.objtype + ' '
+
+
 class PlSqlXRefRole(XRefRole):
     """
     Description of a generic xref role.
@@ -221,7 +238,8 @@ class PlSqlXRefRole(XRefRole):
 
     def process_link(self, env, refnode, has_explicit_title, title, target):
         return title, target
-        
+
+
 class PlSqlDomain(Domain):
     """PL/SQL language domain."""
     name = 'plsql'
@@ -232,6 +250,7 @@ class PlSqlDomain(Domain):
         'function': ObjType(l_('function'), 'meth', 'obj'),
         'library': ObjType(l_('library'), 'lib', 'obj'),
         'type': ObjType(l_('type'), 'type', 'obj'),
+        'table': ObjType(l_('table'), 'tbl', 'obj'),
     }
 
     directives = {
@@ -240,21 +259,23 @@ class PlSqlDomain(Domain):
         'function': PlSqlMethod,
         'library': PlSqlLibrary,
         'type': PlSqlType,
+        'table': PlSqlTable,
     }
-    
+
     roles = {
         'pkg': PlSqlXRefRole(),
         'meth': PlSqlXRefRole(),
         'lib': PlSqlXRefRole(),
         'type': PlSqlXRefRole(),
+        'tbl': PlSqlXRefRole(),
     }
-    
+
     initial_data = {
         'objects': {},  # fullname -> docname, objtype
     }
 
     def clear_doc(self, docname):
-        for fullname, (fn, _) in list(self.data['objects'].items()):
+        for fullname, (fn, null) in list(self.data['objects'].items()):
             if fn == docname:
                 del self.data['objects'][fullname]
 
@@ -269,6 +290,7 @@ class PlSqlDomain(Domain):
     def get_objects(self):
         for refname, (docname, type) in self.data['objects'].items():
             yield (refname, refname, type, docname, refname, 1)
+
 
 def setup(app):
     app.add_domain(PlSqlDomain)
