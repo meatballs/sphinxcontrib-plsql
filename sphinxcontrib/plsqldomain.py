@@ -231,6 +231,15 @@ class PlSqlTable(PlSqlObject):
         return self.objtype + ' '
 
 
+class PlSqlTrigger(PlSqlObject):
+    """
+    Description of a trigger.
+    """
+
+    def get_signature_prefix(self, sig):
+        return self.objtype + ' '
+
+
 class PlSqlXRefRole(XRefRole):
     """
     Description of a generic xref role.
@@ -251,6 +260,8 @@ class PlSqlDomain(Domain):
         'library': ObjType(l_('library'), 'lib', 'obj'),
         'type': ObjType(l_('type'), 'type', 'obj'),
         'table': ObjType(l_('table'), 'tbl', 'obj'),
+        'trigger': ObjType(l_('trigger'), 'trg', 'obj'),
+
     }
 
     directives = {
@@ -268,6 +279,7 @@ class PlSqlDomain(Domain):
         'lib': PlSqlXRefRole(),
         'type': PlSqlXRefRole(),
         'tbl': PlSqlXRefRole(),
+        'trg': PlSqlXRefRole(),
     }
 
     initial_data = {
