@@ -271,6 +271,7 @@ class PlSqlDomain(Domain):
         'library': PlSqlLibrary,
         'type': PlSqlType,
         'table': PlSqlTable,
+        'trigger': PlSqlTrigger,
     }
 
     roles = {
