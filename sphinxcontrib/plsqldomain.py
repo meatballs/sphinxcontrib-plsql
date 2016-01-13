@@ -60,7 +60,7 @@ class PlSqlTypedField(TypedField):
                 # inconsistencies later when references are resolved
                 fieldtype = types.pop(fieldarg)
                 if len(fieldtype) == 1 and isinstance(fieldtype[0], nodes.Text):
-                    typename = u''.join(n.astext() for n in fieldtype)
+                    typename = ''.join(n.astext() for n in fieldtype)
 
                     # We split the typename because it can have the full parameter
                     # signature, as in "in out custom_type". So, we need to do this
@@ -254,7 +254,7 @@ class PlSqlDomain(Domain):
     }
 
     def clear_doc(self, docname):
-        for fullname, (fn, _) in self.data['objects'].items():
+        for fullname, (fn, _) in list(self.data['objects'].items()):
             if fn == docname:
                 del self.data['objects'][fullname]
 
@@ -267,7 +267,7 @@ class PlSqlDomain(Domain):
                             contnode, target)
 
     def get_objects(self):
-        for refname, (docname, type) in self.data['objects'].iteritems():
+        for refname, (docname, type) in self.data['objects'].items():
             yield (refname, refname, type, docname, refname, 1)
 
 def setup(app):
